@@ -23,14 +23,16 @@ model Tenant {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  name        String?
-  memberships Membership[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  Account     Account[]
-  Session     Session[]
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  image         String?      // ✅ add this
+  emailVerified DateTime?    // ✅ add this
+  memberships   Membership[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  Account       Account[]
+  Session       Session[]
 }
 
 model Membership {

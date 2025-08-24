@@ -1,18 +1,11 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth from "next-auth";
-import { db } from "./db";
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { db } from "./db";
 
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
+export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(db),
-  session: {
-    strategy: "database",
-  },
+  session: { strategy: "database" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -21,8 +14,13 @@ export const {
   ],
   callbacks: {
     async session({ session, user }) {
-      if (session.user) session.user = user;
+      if (session.user) {
+        session.user.id = user.id;
+      }
       return session;
     },
   },
-});
+};
+
+// ✅ NextAuth() returns an object with handlers, auth, signIn, signOut
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
