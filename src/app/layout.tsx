@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Knowbase AI",
-  description: "Knowbase AI",
+  description: "Knowbase AI app",
 };
 
 export default async function RootLayout({
