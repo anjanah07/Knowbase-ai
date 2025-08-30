@@ -14,25 +14,29 @@ datasource db {
 }
 
 model Tenant {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  users     Membership[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  users       Membership[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Document    Document[]
+  Chunk       Chunk[]
+  UsageRecord UsageRecord[]
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String       @unique
+  id            String        @id @default(cuid())
+  email         String        @unique
   name          String?
-  image         String?      // ✅ add this
-  emailVerified DateTime?    // ✅ add this
+  image         String? // ✅ add this
+  emailVerified DateTime? // ✅ add this
   memberships   Membership[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   Account       Account[]
   Session       Session[]
+  UsageRecord   UsageRecord[]
 }
 
 model Membership {
@@ -60,7 +64,7 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -85,4 +89,86 @@ enum Role {
   OWNER
   ADMIN
   MEMBER
+}
+
+model Document {
+  id        String    @id @default(cuid())
+  tenantId  String
+  title     String
+  mimeType  String
+  bytesUrl  String
+  status    DocStatus @default(PENDING)
+  error     String?
+  Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chunks    Chunk[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+enum DocStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+model Chunk {
+  id         String   @id @default(cuid())
+  tenantId   String
+  documentId String
+  position   Int
+  content    String
+  Tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  Document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentId])
+}
+
+model UsageRecord {
+  id        String      @id @default(cuid())
+  tenantId  String
+  userId    String?
+  action    UsageAction // EMBED | CHAT
+  tokensIn  Int         @default(0)
+  tokensOut Int         @default(0)
+  costUsd   Decimal     @default(0)
+  createdAt DateTime    @default(now())
+
+  Tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  User   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+}
+
+enum UsageAction {
+  EMBED
+  CHAT
+}
+
+model Job {
+  id        String    @id @default(cuid())
+  tenantId  String
+  type      JobType
+  status    JobStatus @default(QUEUED)
+  payload   Json
+  attempts  Int       @default(0)
+  error     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status, type, createdAt])
+  @@index([tenantId])
+}
+
+enum JobType {
+  INGEST_DOCUMENT
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
 }
