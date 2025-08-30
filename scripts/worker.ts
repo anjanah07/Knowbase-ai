@@ -41,3 +41,14 @@ const runOnce = async () => {
     });
   }
 };
+async function main() {
+  while (true) {
+    await runOnce();
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
