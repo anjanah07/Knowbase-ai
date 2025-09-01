@@ -1,7 +1,7 @@
+import "dotenv/config";
 import { embed } from "@/lib/ai";
 import { chunkText, fetchTextFromUrl } from "@/lib/chunk";
 import { db } from "@/lib/db";
-import "dotenv/config";
 import { ca } from "zod/locales";
 const runOnce = async () => {
   const job = await db.job.findFirst({
@@ -19,16 +19,18 @@ const runOnce = async () => {
     for (let i = 0; i < chunks.length; i++) {
       const emb = await embed(chunks[i]);
 
-      await db.$executeRawUnsafe(
-        `INSERT INTO "Chunk" ("id","tenantId","documentId","position","content","embedding_vec") VALUES (gen_random_uuid(),${doc.tenantId}, ${doc.id}, ${i}, ${chunks[i]}, ${emb})`
-      );
-      await db.document.update({
-        where: { id: doc.id },
-        data: { status: "READY", error: null },
-      });
-
-      await db.job.update({ where: { id: job.id }, data: { status: "DONE" } });
+      await db.$queryRaw`
+      INSERT INTO "Chunk" ("id","tenantId","documentId","position","content","embedding_vec")
+      VALUES (gen_random_uuid(), ${doc.tenantId}, ${doc.id}, ${i}, ${chunks[i]}, ${emb})
+    `;
     }
+
+    await db.document.update({
+      where: { id: doc.id },
+      data: { status: "READY", error: null },
+    });
+
+    await db.job.update({ where: { id: job.id }, data: { status: "DONE" } });
   } catch (e: any) {
     console.error(e);
     await db.job.update({

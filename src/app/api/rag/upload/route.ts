@@ -9,7 +9,8 @@ const schema = z.object({
   mimeType: z.string().default("text/plain"),
 });
 export const POST = async (req: NextRequest) => {
-  const body = schema.parse(req.json());
+  const json = await req.json();
+  const body = schema.parse(json);
   const tenant = await db.tenant.findUnique({
     where: { slug: body.tenantSlug },
   });
