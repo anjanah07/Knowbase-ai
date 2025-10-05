@@ -1,5 +1,10 @@
 import "dotenv/config";
+import { decode, encode } from "gpt-tokenizer";
+
 export const embed = async (text: string): Promise<number[]> => {
+  const tokens = encode(text);
+  const safeTokens = tokens.slice(0, 8000);
+  const safeText = decode(safeTokens);
   const res = await fetch("https://api.jina.ai/v1/embeddings", {
     method: "POST",
     headers: {
@@ -7,8 +12,8 @@ export const embed = async (text: string): Promise<number[]> => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "jina-embeddings-v3-small",
-      input: [text], // batch of 1
+      model: "jina-embeddings-v3", // ✅ correct tag
+      input: [safeText],
     }),
   });
 
@@ -18,11 +23,7 @@ export const embed = async (text: string): Promise<number[]> => {
   }
 
   const data = JSON.parse(body);
-  const vec = data?.data?.[0]?.embedding;
-  if (!Array.isArray(vec)) {
-    throw new Error(`Unexpected Jina response: ${body.slice(0, 200)}`);
-  }
-  return vec as number[];
+  return data?.data?.[0]?.embedding;
 };
 export const generate = async (prompt: string): Promise<string> => {
   const res = await fetch(
@@ -40,11 +41,13 @@ export const generate = async (prompt: string): Promise<string> => {
     }
   );
 
+  const body = await res.text();
   if (!res.ok) {
-    throw new Error(`HuggingFace API error: ${res.status} ${await res.text()}`);
+    throw new Error(
+      `HF Mistral ${res.status} ${res.statusText}: ${body.slice(0, 400)}`
+    );
   }
 
-  const data = await res.json();
-
+  const data = JSON.parse(body);
   return data[0]?.generated_text || "";
 };

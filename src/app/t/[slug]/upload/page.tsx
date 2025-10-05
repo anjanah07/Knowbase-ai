@@ -17,7 +17,7 @@ const upload = async (formData: FormData) => {
     }),
   });
 };
-const page = async ({ params }: { params: { slug: string } }) => {
+const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
   const ctx = await requireMembershipBySlug(slug);
   console.log("ctx", ctx);

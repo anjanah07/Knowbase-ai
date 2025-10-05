@@ -2,7 +2,6 @@ import "dotenv/config";
 import { embed } from "@/lib/ai";
 import { chunkText, fetchTextFromUrl } from "@/lib/chunk";
 import { db } from "@/lib/db";
-import { ca } from "zod/locales";
 const runOnce = async () => {
   const job = await db.job.findFirst({
     where: { status: "QUEUED", type: "INGEST_DOCUMENT" },
@@ -14,8 +13,8 @@ const runOnce = async () => {
     const { documentId } = job.payload as any as { documentId: string };
     const doc = await db.document.findUnique({ where: { id: documentId } });
     if (!doc) throw new Error("Document not found");
-    const text = await fetchTextFromUrl(doc.bytesUrl);
-    const chunks = chunkText(text);
+
+    const chunks = chunkText(doc.bytesUrl);
     for (let i = 0; i < chunks.length; i++) {
       const emb = await embed(chunks[i]);
 
